@@ -1,6 +1,6 @@
 # ONVIF PTZ Camera Control Commands
 
-This document provides a comprehensive list of ONVIF PTZ (Pan-Tilt-Zoom) commands for camera control. All commands use the base URL `http://192.168.18.34:8899/onvif/ptz_service` with basic authentication (username:password).
+This document provides a comprehensive list of ONVIF PTZ (Pan-Tilt-Zoom) commands for camera control. All commands use the base URL `http://<your camera ip>:8899/onvif/ptz_service` with basic authentication (username:password).
 
 ## Basic Authentication
 All commands require basic authentication with the following credentials:
@@ -36,7 +36,7 @@ curl -v -u username:password \
     </ContinuousMove>
   </s:Body>
 </s:Envelope>' \
-http://192.168.18.34:8899/onvif/ptz_service
+http://<your camera ip>:8899/onvif/ptz_service
 ```
 
 #### Move Right
@@ -78,7 +78,7 @@ curl -v -u username:password \
     </Stop>
   </s:Body>
 </s:Envelope>' \
-http://192.168.18.34:8899/onvif/ptz_service
+http://<your camera ip>:8899/onvif/ptz_service
 ```
 
 ### 3. Absolute Move
@@ -99,7 +99,7 @@ curl -v -u username:password \
     </AbsoluteMove>
   </s:Body>
 </s:Envelope>' \
-http://192.168.18.34:8899/onvif/ptz_service
+http://<your camera ip>:8899/onvif/ptz_service
 ```
 
 ### 4. Relative Move
@@ -120,7 +120,7 @@ curl -v -u username:password \
     </RelativeMove>
   </s:Body>
 </s:Envelope>' \
-http://192.168.18.34:8899/onvif/ptz_service
+http://<your camera ip>:8899/onvif/ptz_service
 ```
 
 ### 5. Get PTZ Status
@@ -138,7 +138,7 @@ curl -v -u username:password \
     </GetStatus>
   </s:Body>
 </s:Envelope>' \
-http://192.168.18.34:8899/onvif/ptz_service
+http://<your camera ip>:8899/onvif/ptz_service
 ```
 
 ### 6. Set/Get Presets
@@ -156,7 +156,7 @@ curl -v -u username:password \
     </SetPreset>
   </s:Body>
 </s:Envelope>' \
-http://192.168.18.34:8899/onvif/ptz_service
+http://<your camera ip>:8899/onvif/ptz_service
 ```
 
 #### Get Presets
@@ -172,7 +172,7 @@ curl -v -u username:password \
     </GetPresets>
   </s:Body>
 </s:Envelope>' \
-http://192.168.18.34:8899/onvif/ptz_service
+http://<your camera ip>:8899/onvif/ptz_service
 ```
 
 #### Go To Preset
@@ -189,7 +189,7 @@ curl -v -u username:password \
     </GotoPreset>
   </s:Body>
 </s:Envelope>' \
-http://192.168.18.34:8899/onvif/ptz_service
+http://<your camera ip>:8899/onvif/ptz_service
 ```
 
 ## Notes

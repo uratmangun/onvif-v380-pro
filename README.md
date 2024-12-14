@@ -1,6 +1,36 @@
-# ONVIF PTZ Camera Control Commands
+# ONVIF PTZ Camera Control Commands and RTSP Web viewer
 
-This document provides a comprehensive list of ONVIF PTZ (Pan-Tilt-Zoom) commands for camera control. All commands use the base URL `http://<your camera ip>:8899/onvif/ptz_service` with basic authentication (username:password).
+This document provides a comprehensive list of ONVIF PTZ (Pan-Tilt-Zoom) commands for camera control. All commands use the base URL `http://<your camera ip>:8899/onvif/ptz_service` with basic authentication.
+
+## Setup and Configuration for RTSP Web Viewer
+
+This setup allows you to view your RTSP stream on a web interface.
+
+### Environment Variables
+Create a `.env` file based on the provided `.env.example`:
+```bash
+cp .env.example .env
+```
+
+Edit the `.env` file with your camera details:
+```
+ONVIF_USERNAME=
+ONVIF_PASSWORD=
+ONVIF_IP=
+```
+
+### Docker Setup
+1. Build the Docker image:
+```bash
+docker-compose build
+```
+
+2. Run the container:
+```bash
+docker-compose up -d
+```
+
+The RTSP web viewer will be available at `http://localhost:8083`
 
 ## Basic Authentication
 All commands require basic authentication with the following credentials:

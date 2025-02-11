@@ -20,14 +20,9 @@ ONVIF_IP=
 ```
 
 ### Docker Setup
-1. Build the Docker image:
-```bash
-docker-compose build
-```
 
-2. Run the container:
-```bash
-docker-compose up -d
+```
+docker stop rtsp-web; docker rm rtsp-web; docker build -t rtsp-web . && docker run -d --restart always --env-file .env -p 8083:8083 --name rtsp-web rtsp-web
 ```
 
 The RTSP web viewer will be available at `http://localhost:8083`

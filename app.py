@@ -37,10 +37,11 @@ def start_ffmpeg():
             '-c:v', 'libx264',
             '-preset', 'ultrafast',
             '-tune', 'zerolatency',
-            '-crf', '28',
-            '-x264-params', 'keyint=15:min-keyint=15:scenecut=0:force-cfr=1',
-            '-r', '30',
-            '-g', '15',
+            '-vsync', '0',
+            '-copyts',
+            '-x264-params', 'keyint=14:min-keyint=14:scenecut=0:force-cfr=0',
+            '-r', '14',
+            '-g', '14',
             '-f', 'hls',
             '-hls_time', '0.5',
             '-hls_list_size', '2',
@@ -106,13 +107,13 @@ def index():
                         debug: false,
                         enableWorker: true,
                         lowLatencyMode: true,
-                        backBufferLength: 0,
-                        liveSyncDurationCount: 1,
-                        liveMaxLatencyDurationCount: 2,
-                        maxBufferLength: 2,
-                        maxBufferSize: 1 * 1000 * 1000, // 1MB
-                        maxBufferHole: 0.05,
-                        highBufferWatchdogPeriod: 0.5
+                        backBufferLength: 30,
+                        liveSyncDurationCount: 3,
+                        liveMaxLatencyDurationCount: 6,
+                        maxBufferLength: 30,
+                        maxBufferSize: 10 * 1000 * 1000,
+                        maxBufferHole: 0.5,
+                        highBufferWatchdogPeriod: 1
                     }
                 });
             </script>

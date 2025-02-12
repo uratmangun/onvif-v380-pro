@@ -29,17 +29,22 @@ def start_ffmpeg():
         
         command = [
             'ffmpeg',
+            '-fflags', 'nobuffer+discardcorrupt',
+            '-flags', 'low_delay',
+            '-strict', 'experimental',
+            '-rtsp_transport', 'tcp',
             '-i', stream_url,
             '-c:v', 'libx264',
-            '-preset', 'veryfast',
+            '-preset', 'ultrafast',
             '-tune', 'zerolatency',
-            '-c:a', 'aac',
-            '-ar', '44100',
-            '-b:a', '128k',
+            '-crf', '28',
+            '-x264-params', 'keyint=15:min-keyint=15:scenecut=0:force-cfr=1',
+            '-r', '30',
+            '-g', '15',
             '-f', 'hls',
-            '-hls_time', '2',
-            '-hls_list_size', '3',
-            '-hls_flags', 'delete_segments+append_list',
+            '-hls_time', '0.5',
+            '-hls_list_size', '2',
+            '-hls_flags', 'delete_segments+omit_endlist+independent_segments',
             '-hls_segment_filename', '/app/static/hls/segment_%03d.ts',
             '/app/static/hls/playlist.m3u8'
         ]
@@ -54,6 +59,10 @@ def stop_ffmpeg():
 
 # Register cleanup function
 atexit.register(stop_ffmpeg)
+
+@app.route('/hls/<path:filename>')
+def serve_hls(filename):
+    return send_from_directory('/app/static/hls', filename)
 
 @app.route('/')
 def index():
@@ -70,64 +79,46 @@ def index():
                     align-items: center;
                     height: 100vh;
                 }
-                #video {
+                #player {
                     width: 100%;
                     max-width: 1280px;
                     height: auto;
                     aspect-ratio: 16/9;
                 }
             </style>
-            <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+            <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@clappr/player@latest/dist/clappr.min.js"></script>
         </head>
         <body>
-            <video id="video" controls autoplay muted></video>
+            <div id="player"></div>
             <script>
-                var video = document.getElementById('video');
-                if (Hls.isSupported()) {
-                    var hls = new Hls({
+                var player = new Clappr.Player({
+                    source: '/hls/playlist.m3u8',
+                    parentId: '#player',
+                    width: '100%',
+                    height: '100%',
+                    autoPlay: true,
+                    mute: true,
+                    playback: {
+                        playInline: true,
+                        hlsMinimumDvrSize: 0
+                    },
+                    hlsjsConfig: {
                         debug: false,
                         enableWorker: true,
                         lowLatencyMode: true,
-                        backBufferLength: 90
-                    });
-                    
-                    hls.loadSource('/hls/playlist.m3u8');
-                    hls.attachMedia(video);
-                    hls.on(Hls.Events.MEDIA_ATTACHED, function() {
-                        video.play();
-                    });
-                    
-                    hls.on(Hls.Events.ERROR, function(event, data) {
-                        if (data.fatal) {
-                            switch(data.type) {
-                                case Hls.ErrorTypes.NETWORK_ERROR:
-                                    console.log('Network error, trying to recover...');
-                                    hls.startLoad();
-                                    break;
-                                case Hls.ErrorTypes.MEDIA_ERROR:
-                                    console.log('Media error, trying to recover...');
-                                    hls.recoverMediaError();
-                                    break;
-                                default:
-                                    console.log('Fatal error, reloading page in 5 seconds...');
-                                    setTimeout(() => window.location.reload(), 5000);
-                                    break;
-                            }
-                        }
-                    });
-                }
-                else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                    // For Safari
-                    video.src = '/hls/playlist.m3u8';
-                }
+                        backBufferLength: 0,
+                        liveSyncDurationCount: 1,
+                        liveMaxLatencyDurationCount: 2,
+                        maxBufferLength: 2,
+                        maxBufferSize: 1 * 1000 * 1000, // 1MB
+                        maxBufferHole: 0.05,
+                        highBufferWatchdogPeriod: 0.5
+                    }
+                });
             </script>
         </body>
     </html>
     """
-
-@app.route('/hls/<path:filename>')
-def serve_hls(filename):
-    return send_from_directory('/app/static/hls', filename)
 
 if __name__ == '__main__':
     start_ffmpeg()

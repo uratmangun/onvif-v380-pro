@@ -25,7 +25,7 @@ def start_ffmpeg():
     global ffmpeg_process
     if ffmpeg_process is None:
         # Ensure the hls directory exists
-        os.makedirs('/app/static/hls', exist_ok=True)
+        os.makedirs('static/hls', exist_ok=True)
         
         command = [
             'ffmpeg',
@@ -39,17 +39,17 @@ def start_ffmpeg():
             '-c:v', 'libx264',
             '-preset', 'ultrafast',
             '-tune', 'zerolatency',
-            '-vsync', '0',
-            '-copyts',
-            '-x264-params', 'keyint=10:min-keyint=10:scenecut=0:force-cfr=0',
+            '-fps_mode', 'cfr',
             '-r', '14',
-            '-g', '10',
+            '-g', '28',
+            '-keyint_min', '28',
+            '-sc_threshold', '0',
             '-f', 'hls',
-            '-hls_time', '0.2',
-            '-hls_list_size', '2',
+            '-hls_time', '2',
+            '-hls_list_size', '3',
             '-hls_flags', 'delete_segments+discont_start+omit_endlist',
-            '-hls_segment_filename', '/app/static/hls/segment_%03d.ts',
-            '/app/static/hls/playlist.m3u8'
+            '-hls_segment_filename', 'static/hls/segment_%03d.ts',
+            'static/hls/playlist.m3u8'
         ]
         ffmpeg_process = subprocess.Popen(command)
 
@@ -65,7 +65,7 @@ atexit.register(stop_ffmpeg)
 
 @app.route('/hls/<path:filename>')
 def serve_hls(filename):
-    return send_from_directory('/app/static/hls', filename)
+    return send_from_directory('static/hls', filename)
 
 @app.route('/')
 def index():

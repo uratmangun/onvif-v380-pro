@@ -55,46 +55,36 @@ def start_ffmpeg():
                 '-y',
                 '-fflags', '+genpts+igndts+discardcorrupt+flush_packets',
                 '-flags', 'low_delay',
-                '-strict', 'experimental',
-                '-avioflags', 'direct',
-                '-probesize', '32',
-                '-analyzeduration', '0',
                 '-rtsp_transport', 'tcp',
                 '-rtsp_flags', 'prefer_tcp',
                 '-timeout', '5000000',
                 '-use_wallclock_as_timestamps', '1',
-                '-re',  # Read input at native frame rate
                 '-i', stream_url,
-                '-vsync', '1',  # Soft drop frames
-                '-async', '1',  # Audio sync method
                 '-c:v', 'libx264',
-                '-preset', 'ultrafast',  # Changed to ultrafast for minimum latency
+                '-preset', 'ultrafast',
                 '-tune', 'zerolatency',
-                '-profile:v', 'high',   # Keep high profile for better quality
-                '-level', '4.1',
+                '-profile:v', 'baseline',
+                '-level', '3.0',
                 '-fps_mode', 'cfr',
-                '-r', '30',
+                '-r', '15',
                 '-g', '30',
                 '-keyint_min', '30',
-                '-sc_threshold', '0',    # Disable scene cut detection for faster encoding
-                '-bufsize', '4000k',
-                '-maxrate', '4000k',
+                '-sc_threshold', '40',
+                '-bufsize', '3000k',
+                '-maxrate', '3000k',
                 '-crf', '23',
                 '-pix_fmt', 'yuv420p',
-                '-x264-params', 'no-scenecut=1:rc-lookahead=0:ref=1:bframes=0:force-cfr=1',  # Optimized for ultrafast
-                '-max_muxing_queue_size', '1024',
+                '-x264-params', 'no-scenecut=0:rc-lookahead=30:ref=3:bframes=3:b-adapt=1:force-cfr=1',
+                '-max_muxing_queue_size', '2048',
                 '-f', 'hls',
                 '-method', 'PUT',
-                '-hls_time', '0.5',        # Reduced segment time for lower latency
-                '-hls_init_time', '0.5',   # Match segment time
-                '-hls_list_size', '2',     # Reduced list size
-                '-hls_delete_threshold', '1',
-                '-hls_flags', 'delete_segments+discont_start+omit_endlist+independent_segments+program_date_time',
+                '-hls_time', '2',
+                '-hls_init_time', '2',
+                '-hls_list_size', '6',
+                '-hls_flags', 'delete_segments+discont_start+omit_endlist+independent_segments',
                 '-hls_segment_type', 'mpegts',
                 '-hls_allow_cache', '0',
-                '-hls_playlist_type', 'event',
                 '-start_number', '0',
-                '-segment_wrap', '24',
                 '-hls_segment_filename', 'static/hls/segment_%03d.ts',
                 'static/hls/playlist.m3u8'
             ]
@@ -345,44 +335,38 @@ def index():
                     }, 1000);
                 });
 
-                // Add stall detection and recovery
+                // Update the stall detection in the HTML/JavaScript section
                 let lastPosition = 0;
                 let stallCount = 0;
-                const MAX_STALLS = 2;
-                const STALL_THRESHOLD = 2000; // 2 seconds
+                let lastStallCheck = Date.now();
+                const STALL_THRESHOLD = 3000; // 3 seconds
+                const MIN_MOVEMENT = 0.1; // Minimum movement threshold
 
                 setInterval(() => {
                     if (player.isPlaying()) {
                         const currentPosition = player.getCurrentTime();
-                        if (currentPosition === lastPosition) {
-                            stallCount++;
-                            console.log('Potential stall detected:', stallCount);
-                            
-                            if (stallCount >= MAX_STALLS) {
-                                console.log('Stall detected, restarting stream');
+                        const currentTime = Date.now();
+                        const timeDiff = currentTime - lastStallCheck;
+                        
+                        // Only check for stalls if enough time has passed
+                        if (timeDiff >= STALL_THRESHOLD) {
+                            // Check if the position has moved more than the minimum threshold
+                            if (Math.abs(currentPosition - lastPosition) < MIN_MOVEMENT) {
+                                stallCount++;
+                                console.log('Potential stall detected:', stallCount);
+                                document.getElementById('status').textContent = `Stream status: running (stalling detected - ${stallCount} times)`;
+                            } else {
                                 stallCount = 0;
-                                // Stop the player first
-                                player.stop();
-                                // Restart the stream
-                                fetch('/stream/stop', { method: 'POST' })
-                                    .then(() => {
-                                        setTimeout(() => {
-                                            fetch('/stream/start', { method: 'POST' })
-                                                .then(() => {
-                                                    // Wait for FFmpeg to start and create the playlist
-                                                    setTimeout(() => {
-                                                        player.load('/hls/playlist.m3u8');
-                                                    }, 3000);
-                                                });
-                                        }, 1000);
-                                    });
+                                // Only update status if we're not already showing a stall message
+                                if (!document.getElementById('status').textContent.includes('stalling')) {
+                                    document.getElementById('status').textContent = 'Stream status: running';
+                                }
                             }
-                        } else {
-                            stallCount = 0;
+                            lastPosition = currentPosition;
+                            lastStallCheck = currentTime;
                         }
-                        lastPosition = currentPosition;
                     }
-                }, STALL_THRESHOLD);
+                }, 1000);
 
                 player.on(Clappr.Events.PLAYBACK_PLAY, function() {
                     stallCount = 0;

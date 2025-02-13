@@ -337,40 +337,62 @@ def index():
 
                 // Update the stall detection in the HTML/JavaScript section
                 let lastPosition = 0;
-                let stallCount = 0;
                 let lastStallCheck = Date.now();
                 const STALL_THRESHOLD = 3000; // 3 seconds
                 const MIN_MOVEMENT = 0.1; // Minimum movement threshold
 
+                // Function to check if player is in loading state
+                function isPlayerLoading() {
+                    const loadingElement = document.querySelector('.player-loading');
+                    const bufferingElement = document.querySelector('.spinner-three-bounce');
+                    return (loadingElement && loadingElement.style.display !== 'none') || 
+                           (bufferingElement && bufferingElement.style.display !== 'none');
+                }
+
+                // Function to check if player is actually playing
+                function isActuallyPlaying() {
+                    return player && 
+                           player.isPlaying() && 
+                           !isPlayerLoading() && 
+                           player.getCurrentTime() > 0;
+                }
+
                 setInterval(() => {
-                    if (player.isPlaying()) {
+                    if (isActuallyPlaying()) {
                         const currentPosition = player.getCurrentTime();
                         const currentTime = Date.now();
                         const timeDiff = currentTime - lastStallCheck;
                         
-                        // Only check for stalls if enough time has passed
                         if (timeDiff >= STALL_THRESHOLD) {
-                            // Check if the position has moved more than the minimum threshold
                             if (Math.abs(currentPosition - lastPosition) < MIN_MOVEMENT) {
-                                stallCount++;
-                                console.log('Potential stall detected:', stallCount);
-                                document.getElementById('status').textContent = `Stream status: running (stalling detected - ${stallCount} times)`;
+                                document.getElementById('status').textContent = 'Stream status: Stream stopped or buffering';
                             } else {
-                                stallCount = 0;
-                                // Only update status if we're not already showing a stall message
-                                if (!document.getElementById('status').textContent.includes('stalling')) {
-                                    document.getElementById('status').textContent = 'Stream status: running';
-                                }
+                                document.getElementById('status').textContent = 'Stream status: running';
                             }
                             lastPosition = currentPosition;
                             lastStallCheck = currentTime;
                         }
+                    } else if (player && !player.isPlaying()) {
+                        document.getElementById('status').textContent = 'Stream status: Stream stopped';
+                    } else if (isPlayerLoading()) {
+                        document.getElementById('status').textContent = 'Stream status: Buffering';
                     }
                 }, 1000);
 
                 player.on(Clappr.Events.PLAYBACK_PLAY, function() {
-                    stallCount = 0;
                     lastPosition = player.getCurrentTime();
+                });
+
+                player.on(Clappr.Events.PLAYBACK_BUFFERING, function() {
+                    document.getElementById('status').textContent = 'Stream status: Buffering';
+                });
+
+                player.on(Clappr.Events.PLAYBACK_BUFFERFULL, function() {
+                    document.getElementById('status').textContent = 'Stream status: running';
+                });
+
+                player.on(Clappr.Events.PLAYBACK_STOP, function() {
+                    document.getElementById('status').textContent = 'Stream status: Stream stopped';
                 });
 
                 function updateButtons(status) {

@@ -394,7 +394,16 @@ def index():
                     } else if (player && !player.isPlaying()) {
                         document.getElementById('status').textContent = 'Stream status: Stream stopped';
                     } else if (isPlayerLoading()) {
-                        document.getElementById('status').textContent = 'Stream status: Buffering';
+                         bufferingCount++;
+                    lastBufferingTime = Date.now();
+                    console.log('Buffering count:', bufferingCount);
+                    
+                    if (bufferingCount >= MAX_BUFFERING_COUNT) {
+                        document.getElementById('status').textContent = `Stream status: Buffering (Count: ${bufferingCount}) - Restarting stream due to excessive buffering...`;
+                        handleExcessiveBuffering();
+                    } else {
+                        document.getElementById('status').textContent = `Stream status: Buffering (Count: ${bufferingCount})`;
+                    }
                     }
                 }, 1000);
 
@@ -403,13 +412,15 @@ def index():
                 });
 
                 player.on(Clappr.Events.PLAYBACK_BUFFERING, function() {
-                    document.getElementById('status').textContent = 'Stream status: Buffering';
                     bufferingCount++;
                     lastBufferingTime = Date.now();
                     console.log('Buffering count:', bufferingCount);
                     
                     if (bufferingCount >= MAX_BUFFERING_COUNT) {
+                        document.getElementById('status').textContent = `Stream status: Buffering (Count: ${bufferingCount}) - Restarting stream due to excessive buffering...`;
                         handleExcessiveBuffering();
+                    } else {
+                        document.getElementById('status').textContent = `Stream status: Buffering (Count: ${bufferingCount})`;
                     }
                 });
 

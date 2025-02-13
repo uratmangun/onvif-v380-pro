@@ -465,14 +465,20 @@ def index():
                             method: 'POST'
                         });
                         const data = await response.json();
-                        checkStatus();
-                        if (action === 'start') {
-                            // Wait for FFmpeg to start and create the playlist
-                            setTimeout(() => {
-                                player.load('/hls/playlist.m3u8');
-                            }, 3000);
-                        } else if (action === 'stop') {
-                            player.stop();
+                        
+                        if (response.ok) {
+                            if (action === 'start') {
+                                // Wait for FFmpeg to start and create the playlist
+                                setTimeout(() => {
+                                    player.load('/hls/playlist.m3u8');
+                                }, 3000);
+                            } else if (action === 'stop') {
+                                player.stop();
+                            }
+                            // Only check status after successful response
+                            checkStatus();
+                        } else {
+                            console.error('Server error:', data.message);
                         }
                     } catch (error) {
                         console.error('Error:', error);

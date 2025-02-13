@@ -357,7 +357,26 @@ def index():
                            player.getCurrentTime() > 0;
                 }
 
+                let bufferingCount = 0;
+                let lastBufferingTime = Date.now();
+                const BUFFERING_RESET_INTERVAL = 30000; // Reset buffering count after 30 seconds
+                const MAX_BUFFERING_COUNT = 3; // Maximum allowed buffering occurrences
+
+                async function handleExcessiveBuffering() {
+                    console.log('Excessive buffering detected, restarting stream...');
+                    await controlStream('stop');
+                    setTimeout(async () => {
+                        await controlStream('start');
+                    }, 2000);
+                    bufferingCount = 0;
+                }
+
                 setInterval(() => {
+                    // Reset buffering count if enough time has passed
+                    if (Date.now() - lastBufferingTime > BUFFERING_RESET_INTERVAL) {
+                        bufferingCount = 0;
+                    }
+
                     if (isActuallyPlaying()) {
                         const currentPosition = player.getCurrentTime();
                         const currentTime = Date.now();
@@ -385,6 +404,13 @@ def index():
 
                 player.on(Clappr.Events.PLAYBACK_BUFFERING, function() {
                     document.getElementById('status').textContent = 'Stream status: Buffering';
+                    bufferingCount++;
+                    lastBufferingTime = Date.now();
+                    console.log('Buffering count:', bufferingCount);
+                    
+                    if (bufferingCount >= MAX_BUFFERING_COUNT) {
+                        handleExcessiveBuffering();
+                    }
                 });
 
                 player.on(Clappr.Events.PLAYBACK_BUFFERFULL, function() {

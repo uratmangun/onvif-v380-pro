@@ -1,4 +1,4 @@
-from flask import Flask, send_from_directory, jsonify
+from flask import Flask, send_from_directory, jsonify, request
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
@@ -26,7 +26,28 @@ auth = f"{ONVIF_USERNAME}:{ONVIF_PASSWORD}@{ONVIF_IP}"
 stream_url = f"rtsp://{auth}:554/ch01/0"
 
 app = Flask(__name__)
-CORS(app)
+# Configure CORS to allow requests from your domain
+CORS(app, resources={
+    r"/*": {
+        "origins": ["https://onvif.uratmangun.ovh"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"],
+        "supports_credentials": True
+    }
+})
+
+# Add CORS headers for HLS files
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', 'https://onvif.uratmangun.ovh')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+    response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    if request.path.endswith(('.m3u8', '.ts')):
+        response.headers.add('Cache-Control', 'no-cache, no-store, must-revalidate')
+        response.headers.add('Pragma', 'no-cache')
+        response.headers.add('Expires', '0')
+    return response
 
 # Global variable for FFmpeg process
 ffmpeg_process = None

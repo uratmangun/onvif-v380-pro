@@ -155,19 +155,27 @@ def stop_ffmpeg():
         try:
             logger.info("Stopping FFmpeg process...")
             ffmpeg_process.send_signal(signal.SIGTERM)
-            ffmpeg_process.wait(timeout=5)
-            ffmpeg_process = None
-            logger.info("FFmpeg process stopped")
-            return True
+            try:
+                ffmpeg_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                logger.warning("FFmpeg process did not terminate within timeout, forcing kill")
+                ffmpeg_process.kill()
+                ffmpeg_process.wait()
+            finally:
+                ffmpeg_process = None
+                logger.info("FFmpeg process stopped")
+                return True
         except Exception as e:
             logger.error(f"Error stopping FFmpeg: {e}")
             try:
-                ffmpeg_process.kill()
+                if ffmpeg_process:
+                    ffmpeg_process.kill()
+                    ffmpeg_process = None
             except:
                 pass
-            ffmpeg_process = None
-            return False
-    return False
+            return True  # Return True even if we had to force kill
+    logger.info("No FFmpeg process was running")
+    return True  # Return True when there's no process to stop
 
 # Register cleanup function
 atexit.register(stop_ffmpeg)
@@ -200,9 +208,8 @@ def start_stream():
 @app.route('/stream/stop', methods=['POST'])
 def stop_stream():
     try:
-        if stop_ffmpeg():
-            return jsonify({"status": "success", "message": "Stream stopped"})
-        return jsonify({"status": "error", "message": "Stream not running or failed to stop"}), 400
+        stop_ffmpeg()  # Always returns True now
+        return jsonify({"status": "success", "message": "Stream stopped or was not running"})
     except Exception as e:
         logger.exception("Error in stop_stream route")
         return jsonify({
